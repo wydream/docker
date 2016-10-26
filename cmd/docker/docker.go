@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// 利用Cobra定义Docker的Cli命令
 func newDockerCommand(dockerCli *command.DockerCli) *cobra.Command {
 	opts := cliflags.NewClientOptions()
 	var flags *pflag.FlagSet
