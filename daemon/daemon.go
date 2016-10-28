@@ -70,24 +70,35 @@ var (
 
 // Daemon holds information about the Docker daemon.
 type Daemon struct {
+	//根据传入的证书生成的容器ID，若没有传入则使用ECDSA加密算法生成
 	ID                        string
+	//部署所有Docker容器的路径
 	repository                string
+	//用于存储具体Docker容器信息的对象
 	containers                container.Store
+	//Docker容器所执行的命令
 	execCommands              *exec.Store
 	referenceStore            reference.Store
 	downloadManager           *xfer.LayerDownloadManager
 	uploadManager             *xfer.LayerUploadManager
 	distributionMetadataStore dmetadata.Store
 	trustKey                  libtrust.PrivateKey
+	//用于通过简短有效的字符串前缀定义唯一的镜像
 	idIndex                   *truncindex.TruncIndex
 	configStore               *Config
+	//收集容器网络及cgroup信息
 	statsCollector            *statsCollector
+	//提供日志的默认配置信息
 	defaultLogConfig          containertypes.LogConfig
+	//处理远程的registry连接服务
 	RegistryService           registry.Service
+	//为Docker提供事件通知订阅服务
 	EventsService             *events.Events
+	//libnetwork提供的controller实例
 	netController             libnetwork.NetworkController
 	volumes                   *store.VolumeStore
 	discoveryWatcher          discoveryReloader
+	//Docker运行的工作目录
 	root                      string
 	seccompEnabled            bool
 	shutdown                  bool
@@ -686,6 +697,7 @@ func NewDaemon(config *Config, registryService registry.Service, containerdRemot
 	return d, nil
 }
 
+//先用SIGTERM杀死容器进程，如果StopTimeout内不能完成，则使用SIGKILL强制杀死
 func (daemon *Daemon) shutdownContainer(c *container.Container) error {
 	stopTimeout := c.StopTimeout()
 
