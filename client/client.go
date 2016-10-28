@@ -88,7 +88,7 @@ type Client struct {
 // Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default.
 func NewEnvClient() (*Client, error) {
 	var client *http.Client
-	//读取鉴权信息
+	// 读取TLS鉴权信息
 	if dockerCertPath := os.Getenv("DOCKER_CERT_PATH"); dockerCertPath != "" {
 		options := tlsconfig.Options{
 			CAFile:             filepath.Join(dockerCertPath, "ca.pem"),
@@ -109,6 +109,7 @@ func NewEnvClient() (*Client, error) {
 	}
 
 	host := os.Getenv("DOCKER_HOST")
+	// default为本机地址"unix:///var/run/docker.sock"
 	if host == "" {
 		host = DefaultDockerHost
 	}
@@ -134,6 +135,7 @@ func NewClient(host string, version string, client *http.Client, httpHeaders map
 		return nil, err
 	}
 
+	// TLS config验证
 	if client != nil {
 		if _, ok := client.Transport.(*http.Transport); !ok {
 			return nil, fmt.Errorf("unable to verify TLS configuration, invalid transport %v", client.Transport)
@@ -154,6 +156,8 @@ func NewClient(host string, version string, client *http.Client, httpHeaders map
 		// Unfortunately, the model of having a host-ish/url-thingy as the connection
 		// string has us confusing protocol and transport layers. We continue doing
 		// this to avoid breaking existing clients but this should be addressed.
+		// 大概意思是理想状态下创建Client实例只需要接受一个`*http.Client`就好了，让httpClient去处理细节
+		// 由于之前对协议层和传输层分离不清晰，为了兼容之前的那些版本，暂时先这么做
 		scheme = "https"
 	}
 
@@ -171,6 +175,7 @@ func NewClient(host string, version string, client *http.Client, httpHeaders map
 
 // getAPIPath returns the versioned request path to call the api.
 // It appends the query parameters to the path if they are not empty.
+// 根据版本调整API格式
 func (cli *Client) getAPIPath(p string, query url.Values) string {
 	var apiPath string
 	if cli.version != "" {
@@ -192,17 +197,20 @@ func (cli *Client) getAPIPath(p string, query url.Values) string {
 // ClientVersion returns the version string associated with this
 // instance of the Client. Note that this value can be changed
 // via the DOCKER_API_VERSION env var.
+// 返回Client的版本
 func (cli *Client) ClientVersion() string {
 	return cli.version
 }
 
 // UpdateClientVersion updates the version string associated with this
 // instance of the Client.
+// 更改版本信息
 func (cli *Client) UpdateClientVersion(v string) {
 	cli.version = v
 }
 
 // ParseHost verifies that the given host strings is valid.
+// 验证并拆分host地址
 func ParseHost(host string) (string, string, string, error) {
 	protoAddrParts := strings.SplitN(host, "://", 2)
 	if len(protoAddrParts) == 1 {
